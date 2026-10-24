@@ -1,149 +1,164 @@
 import os
-import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# تفعيل اللوج
-logging.basicConfig(level=logging.INFO)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
-TOKEN = os.getenv("BOT_TOKEN")
-if not TOKEN:
-    raise ValueError("BOT_TOKEN ما موجود في Render!")
+# قنواتك الرسمية
+CHANNEL_1 = "@hzohzhzj"
+CHANNEL_1_LINK = "https://t.me/hzohzhzj"
+CHANNEL_2 = "@ricofsj"
+CHANNEL_2_LINK = "https://t.me/ricofsj"
 
-# قنواتك
-CHANNELS = [
-    {"name": "📢 تحديثات البوت", "link": "https://t.me/ricofsj", "username": "@ricofsj"},
-    {"name": "🤖 قناة البوت", "link": "https://t.me/hzohzhzj", "username": "@hzohzhzj"},
-]
-
-# الشروحات - 5 اقسام × 6 دروس
-COURSES = {
+TUTORIALS = {
     "whatsapp": {
-        "title": "💬 شروحات واتساب",
-        "lessons": {
-            "1": {"t": "1️⃣ تأمين واتساب من الاختراق", "c": "🔐 كيف تأمن واتساب:\n\n1. الإعدادات > الحساب > التحقق بخطوتين > فعلو\n2. خلي كود من 6 ارقام\n3. فعل قفل ببصمة: الإعدادات > الخصوصية > قفل ببصمة\n4. راجع الأجهزة المرتبطة كل اسبوع\n5. اي رابط غريب لا تدوسو"},
-            "2": {"t": "2️⃣ استرجاع واتساب مسروق", "c": "♻️ الاسترجاع:\n\n1. نزل واتساب جديد\n2. دخل رقمك\n3. بجيك كود SMS دخلو\n4. السارق بطلع تلقائيا\n5. فعل التحقق بخطوتين فورا"},
-            "3": {"t": "3️⃣ بوت واتساب ببايثون", "c": "🤖 بوت واتساب:\n```python\nfrom pywhatkit import sendwhatmsg\nsendwhatmsg('+249xxxx','مرحبا',15,30)\n```\nالمكتبات: pywhatkit, selenium"},
-            "4": {"t": "4️⃣ حماية من روابط الاختراق", "c": "🛡️ الروابط الملغمة:\n- لا تدوس رابط فيه جائزة\n- افحص الرابط في موقع virustotal.com\n- لا تنزل ملفات apk خارج المتجر"},
-            "5": {"t": "5️⃣ واتساب بيزنس", "c": "💼 واتساب بيزنس:\n1. كاتالوج منتجات\n2. ردود تلقائية\n3. رسائل ترحيب\n4. تصنيف العملاء"},
-            "6": {"t": "6️⃣ اخفاء الظهور", "c": "👁️ الخصوصية:\nالإعدادات > الخصوصية > اخر ظهور > جهات اتصالي فقط\nصورة البروفايل > جهات اتصالي\nالقراءة > الغي الصحين الزرق"},
+        "title": "📱 شروحات واتساب",
+        "subs": {
+            "تأمين حساب واتساب": "🔐 **تأمين واتساب:**\n1. الاعدادات > الحساب > التحقق بخطوتين\n2. ضع PIN من 6 ارقام\n3. اضف بريد استرجاع\n4. لا تشارك كود التحقق مع اي شخص ابدا\n5. فعل قفل البصمة.",
+            "استرجاع رسائل محذوفة": "♻️ **استرجاع الرسائل:**\n1. تأكد عندك نسخ في Google Drive\n2. احذف الواتساب وثبته تاني\n3. اضغط استرجاع عند التثبيت\n4. للايفون من iCloud.",
+            "القفل بالبصمة": "🔒 **القفل:**\nالاعدادات > الخصوصية > قفل التطبيق > فعل البصمة.\nكدا محدش يفتح واتسابك.",
+            "اخفاء الظهور والصحين": "👁️ **الخصوصية:**\nالاعدادات > الخصوصية:\n- اخر ظهور: لا احد\n- الصحين الزرق: الغاء\n- الصورة والحالة: جهاتي فقط.",
+            "واتساب اعمال": "💼 **واتساب بزنس:**\n1. نزل WhatsApp Business\n2. انشئ ملف تجاري\n3. استخدم الردود السريعة\n4. اعمل كتالوج منتجات.",
+            "نقل واتساب لتلفون جديد": "📲 **النقل:**\nاندرويد لاندرويد: نسخ قوقل درايف\nاندرويد لايفون: Move to iOS\nايفون لاندرويد: Smart Switch."
         }
     },
     "facebook": {
         "title": "📘 شروحات فيسبوك",
-        "lessons": {
-            "1": {"t": "1️⃣ تأمين فيسبوك 100%", "c": "🔒 التأمين:\n1. فعل المصادقة الثنائية 2FA\n2. كلمة سر 12 حرف\n3. تنبيه تسجيل الدخول\n4. احذف الجلسات الغريبة"},
-            "2": {"t": "2️⃣ استرجاع فيسبوك", "c": "♻️ ادخل: facebook.com/hacked\nاكتب ايميلك واتبع الخطوات"},
-            "3": {"t": "3️⃣ زيادة متابعين", "c": "📈 نزل ريلز يومي + هاشتاقات + بث مباشر"},
-            "4": {"t": "4️⃣ حماية من الصفحات المزورة", "c": "⚠️ تأكد الرابط هو facebook.com فقط، اي رابط تاني احتيال"},
-            "5": {"t": "5️⃣ انشاء صفحة احترافية", "c": "📄 اسم قصير + غلاف واضح + نشر 3 مرات في الاسبوع"},
-            "6": {"t": "6️⃣ الربح من فيسبوك", "c": "💰 5000 متابع + 60 الف دقيقة مشاهدة = تفعل الربح"},
+        "subs": {
+            "تأمين حساب فيسبوك": "🔐 **تأمين 100%:**\n1. الاعدادات > الامان > المصادقة الثنائية\n2. فعل عبر تطبيق مصادقة\n3. فعل تنبيهات الدخول\n4. احذف الجلسات الغريبة.",
+            "استرجاع حساب معطل": "🔓 **الاسترجاع:**\n1. facebook.com/hacked\n2. اختر تم اختراقي\n3. ارفع هويتك\n4. انتظر 24 ساعة.",
+            "زيادة المتابعين": "📈 **زيادة التفاعل:**\n- 3 منشورات يوميا\n- استخدم ريلز قصير\n- تفاعل اول 30 دقيقة\n- 3 هاشتاق فقط.",
+            "توثيق الصفحة": "✅ **التوثيق:**\n10k متابع + محتوى اصلي + طلب Meta Verified + هوية واضحة.",
+            "الربح من فيسبوك": "💰 **الربح:**\n5000 متابع + 60 الف دقيقة مشاهدة + قدم من Creator Studio + اربط بنك.",
+            "اخفاء الاصدقاء": "🙈 **الخصوصية:**\nالاعدادات > الخصوصية > من يرى اصدقائك: انا فقط."
         }
     },
     "instagram": {
         "title": "📸 شروحات انستغرام",
-        "lessons": {
-            "1": {"t": "1️⃣ تأمين انستغرام", "c": "🔐 فعل 2FA من الإعدادات > الامان"},
-            "2": {"t": "2️⃣ استرجاع انستغرام", "c": "♻️ نسيت كلمة السر > دخل اليوزر > استرجع بالايميل"},
-            "3": {"t": "3️⃣ زيادة متابعين", "c": "🚀 ريلز 15 ثانية + ترند + انشر 7 مساء"},
-            "4": {"t": "4️⃣ تصميم ستوري", "c": "🎨 استخدم Canva، الوان موحدة"},
-            "5": {"t": "5️⃣ خوارزمية الانستا", "c": "🧠 بتحب: حفظ البوست + مشاركة + تعليقات طويلة"},
-            "6": {"t": "6️⃣ الربح من انستغرام", "c": "💰 تسويق بالعمولة + بيع منتجات"},
+        "subs": {
+            "تأمين حساب انستا": "🔐 **التأمين:**\nالاعدادات > الامان > المصادقة الثنائية > فعل عبر WhatsApp + احفظ رموز الاسترداد.",
+            "استرجاع مسروق": "🚨 **استرجاع:**\nنسيت كلمة السر؟ > لا استطيع الوصول؟ > دعم + فيديو سيلفي.",
+            "زيادة متابعين": "🚀 **النمو:**\n- ريلز يومي 7 ثواني\n- صوت ترند\n- هاشتاق 5 صغير + 2 كبير\n- نشر 8 صباحا و 8 مساء.",
+            "توثيق الحساب": "💙 **التوثيق:**\nالاعدادات > الحساب > طلب التحقق + هوية + شهرة.",
+            "حل الحظر": "⛔ **فك الحظر:**\nلا تعمل فولو سريع + لا تكرر تعليق + انتظر 72 ساعة + احذف تطبيقات طرف ثالث.",
+            "حساب احترافي": "📊 **احترافي:**\nالاعدادات > الحساب > التبديل لاحترافي = احصائيات واعلانات."
         }
     },
     "tiktok": {
         "title": "🎵 شروحات تيك توك",
-        "lessons": {
-            "1": {"t": "1️⃣ تأمين تيك توك", "c": "🔐 فعل تحقق بخطوتين + اربط ايميل"},
-            "2": {"t": "2️⃣ كيف تطلع اكسبلور", "c": "🔥 اول 3 ثواني مهمة + صوت ترند + #fyp"},
-            "3": {"t": "3️⃣ مونتاج تيك توك", "c": "✂️ استخدم CapCut، قص سريع + زووم"},
-            "4": {"t": "4️⃣ الربح من تيك توك", "c": "💰 هدايا اللايف + مكافآت المبدعين"},
-            "5": {"t": "5️⃣ حل 0 مشاهدات", "c": "🚫 محتوى مكرر او مخالفة، امسح ونزل بجودة اعلى"},
-            "6": {"t": "6️⃣ زيادة متابعين", "c": "📈 قلد الترندات + دوتو مع مشاهير"},
+        "subs": {
+            "تأمين حساب تيك توك": "🔐 **التأمين:**\nالاعدادات > الامان > تحقق بخطوتين SMS + بريد + باسورد قوي.",
+            "شروط الربح": "💸 **الربح:**\n10k متابع + 100k مشاهدة 30 يوم + عمر 18+ + قدم من Creativity Program.",
+            "كيف تصبح ترند": "🔥 **ترند:**\nاول 3 ثواني مهمة + صوت ترند بدري + 2 فيديو يوميا + مدة 21-34 ثانية.",
+            "حل 0 مشاهدة": "👁️ **حل 0 view:**\nاحذف المخالف + لا تنشر معاد + لا تضع رابط اول اسبوع + تفاعل 20 دقيقة قبل النشر.",
+            "زيادة المتابعين": "📈 **متابعين:**\nتحدي + دويتو + تعليق يجيب لايكات + بث مباشر يومي.",
+            "تحميل بدون علامة": "⬇️ **بدون علامة:**\nاستخدم SnapTik او بوت @TTSaveBot"
         }
     },
     "python": {
         "title": "🐍 شروحات بايثون",
-        "lessons": {
-            "1": {"t": "1️⃣ فحص قوة الباسورد", "c": "🔐 كود:\n```python\nimport re\ndef strong(p):\n return len(p)>8\n```"},
-            "2": {"t": "2️⃣ بوت تليجرام", "c": "🤖 نفس كود بوتك دا هو بوت تليجرام!"},
-            "3": {"t": "3️⃣ اساسيات بايثون", "c": "📚 متغيرات، حلقات، شروط، دوال"},
-            "4": {"t": "4️⃣ فحص الروابط", "c": "🛡️ كود فحص:\n```python\nimport requests\nprint(requests.get(url).status_code)\n```"},
-            "5": {"t": "5️⃣ بوت واتساب", "c": "💬 مكتبات: selenium, pywhatkit"},
-            "6": {"t": "6️⃣ رفع البوت في Render", "c": "☁️ GitHub > Render > ضيف BOT_TOKEN > Deploy"},
+        "subs": {
+            "تثبيت بايثون": "💻 **التثبيت:**\npython.org > نزل 3.12 > علم على Add to PATH > تأكد بـ python --version",
+            "متغيرات": "📦 **المتغيرات:**\n```python\nname = \"Ahmed\"\nage = 20\nprint(name)\n```",
+            "شروط if": "🔀 **if:**\n```python\nif age >= 18:\n    print(\"بالغ\")\nelse:\n    print(\"قاصر\")\n```",
+            "حلقات Loops": "🔁 **Loops:**\n```python\nfor i in range(5):\n    print(i)\n```",
+            "بوت تيليجرام": "🤖 **البوت:**\n@BotFather > /newbot > احفظ التوكن > استخدم python-telegram-bot",
+            "الاستضافة": "☁️ **مجاني:**\nGitHub > Render.com > Web Service > ضع BOT_TOKEN > python bot.py"
         }
     }
 }
 
-async def check_sub(bot, user_id):
-    not_joined = []
-    for ch in CHANNELS:
-        try:
-            m = await bot.get_chat_member(chat_id=ch["username"], user_id=user_id)
-            if m.status in ['left', 'kicked']:
-                not_joined.append(ch)
-        except Exception:
-            not_joined.append(ch)
-    return not_joined
+async def check_joined(user_id, context):
+    try:
+        m1 = await context.bot.get_chat_member(CHANNEL_1, user_id)
+        m2 = await context.bot.get_chat_member(CHANNEL_2, user_id)
+        return m1.status in ['member','administrator','creator'] and m2.status in ['member','administrator','creator']
+    except Exception as e:
+        print(f"check error: {e}")
+        return False
+
+def join_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📢 قناة البوت", url=CHANNEL_1_LINK)],
+        [InlineKeyboardButton("📢 تحديثات البوت", url=CHANNEL_2_LINK)],
+        [InlineKeyboardButton("✅ تم الانضمام", callback_data="check_join")]
+    ])
+
+def main_menu_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📱 واتساب", callback_data="cat_whatsapp"), InlineKeyboardButton("📘 فيسبوك", callback_data="cat_facebook")],
+        [InlineKeyboardButton("📸 انستغرام", callback_data="cat_instagram"), InlineKeyboardButton("🎵 تيك توك", callback_data="cat_tiktok")],
+        [InlineKeyboardButton("🐍 بايثون", callback_data="cat_python")],
+        [InlineKeyboardButton("🆔 ايدي", callback_data="my_id"), InlineKeyboardButton("❓ مساعدة", callback_data="my_help")]
+    ])
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [[InlineKeyboardButton(c["name"], url=c["link"])] for c in CHANNELS]
-    kb.append([InlineKeyboardButton("✅ تم الانضمام - تحقق", callback_data="check")])
-    await update.message.reply_text(
-        "👋 اهلا بيك في بوت الشروحات\n\n🚨 لازم تنضم لقنواتنا اول:",
-        reply_markup=InlineKeyboardMarkup(kb)
-    )
+    user_id = update.effective_user.id
+    if await check_joined(user_id, context):
+        await update.message.reply_text(f"مرحبا {update.effective_user.first_name} 👋\nاختر القسم:", reply_markup=main_menu_keyboard())
+    else:
+        await update.message.reply_text("⚠️ **يجب الاشتراك اولا**\n\nاشترك في القناتين ديل وبعدها اضغط تم الانضمام عشان يفتح البوت:", reply_markup=join_keyboard(), parse_mode="Markdown")
 
-async def id_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    u = update.effective_user
-    await update.message.reply_text(
-        f"🆔 معلوماتك:\n\n👤 الاسم: {u.first_name}\n🆔 الايدي: `{u.id}`\n🔗 اليوزر: @{u.username if u.username else 'لا يوجد'}",
-        parse_mode="Markdown"
-    )
-
-async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📜 الاوامر:\n\n/start - بدء البوت\n/id - يجيب ايدي ومعلوماتك\n/help - قائمة الاوامر\n\nاشترك في القنوات واضغط تحقق عشان تفتح الشروحات."
-    )
-
-async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    data = query.data
     user_id = query.from_user.id
+    data = query.data
 
-    if data == "check":
-        not_joined = await check_sub(context.bot, user_id)
-        if not_joined:
-            kb = [[InlineKeyboardButton(c["name"], url=c["link"])] for c in not_joined]
-            kb.append([InlineKeyboardButton("🔄 اعادة التحقق", callback_data="check")])
-            await query.message.reply_text("❌ لسه ما انضميت لكل القنوات! انضم واضغط اعادة تحقق:", reply_markup=InlineKeyboardMarkup(kb))
+    if data == "check_join":
+        if await check_joined(user_id, context):
+            await query.edit_message_text(f"تم ✅ اهلا {query.from_user.first_name}\nاختر القسم:", reply_markup=main_menu_keyboard())
+        else:
+            await query.answer("❌ لسه ما اشتركت! لازم تشترك في القناتين الاتنين.", show_alert=True)
             return
-        kb = [[InlineKeyboardButton(v["title"], callback_data=f"cat_{k}")] for k, v in COURSES.items()]
-        await query.message.reply_text("✅ تم التحقق بنجاح! اختار القسم:", reply_markup=InlineKeyboardMarkup(kb))
 
     elif data.startswith("cat_"):
-        cat = data.split("_")[1]
-        course = COURSES[cat]
-        kb = [[InlineKeyboardButton(v["t"], callback_data=f"les_{cat}_{k}")] for k, v in course["lessons"].items()]
-        kb.append([InlineKeyboardButton("⬅️ رجوع", callback_data="check")])
-        await query.message.reply_text(f"{course['title']}:", reply_markup=InlineKeyboardMarkup(kb))
+        cat_key = data.replace("cat_", "")
+        cat = TUTORIALS[cat_key]
+        buttons = []
+        for idx, title in enumerate(cat["subs"].keys()):
+            buttons.append([InlineKeyboardButton(title, callback_data=f"sub_{cat_key}_{idx}")])
+        buttons.append([InlineKeyboardButton("⬅️ رجوع", callback_data="back_main")])
+        await query.edit_message_text(f"{cat['title']}\n\nاختر شرح:", reply_markup=InlineKeyboardMarkup(buttons))
 
-    elif data.startswith("les_"):
-        _, cat, les = data.split("_")
-        lesson = COURSES[cat]["lessons"][les]
-        kb = [[InlineKeyboardButton("⬅️ رجوع للدروس", callback_data=f"cat_{cat}")]]
-        await query.message.reply_text(f"{lesson['t']}\n\n{lesson['c']}", reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
+    elif data.startswith("sub_"):
+        _, cat_key, idx = data.split("_")
+        idx = int(idx)
+        cat = TUTORIALS[cat_key]
+        sub_title = list(cat["subs"].keys())[idx]
+        sub_content = list(cat["subs"].values())[idx]
+        buttons = [[InlineKeyboardButton("⬅️ رجوع للاقسام", callback_data=f"cat_{cat_key}")],[InlineKeyboardButton("🏠 رئيسية", callback_data="back_main")]]
+        await query.edit_message_text(f"**{sub_title}**\n\n{sub_content}", reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
+
+    elif data == "back_main":
+        await query.edit_message_text("اختر القسم:", reply_markup=main_menu_keyboard())
+    elif data == "my_id":
+        u = query.from_user
+        text = f"🆔 **معلوماتك:**\n\n👤 الاسم: {u.first_name}\n🆔 الايدي: `{u.id}`\n🔗 يوزر: @{u.username if u.username else 'لا يوجد'}"
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ رجوع", callback_data="back_main")]]), parse_mode="Markdown")
+    elif data == "my_help":
+        help_text = "❓ **الاوامر:**\n\n/start - بدء البوت\nid - معرفة ايديك\nhelp - المساعدة\n\n1. اشترك في القناتين\n2. اضغط تم الانضمام\n3. اختر القسم"
+        await query.edit_message_text(help_text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ رجوع", callback_data="back_main")]]), parse_mode="Markdown")
+
+async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.lower().strip()
+    if text == "id":
+        u = update.effective_user
+        await update.message.reply_text(f"🆔 ايديك: `{u.id}`\nاسمك: {u.first_name}\nيوزرك: @{u.username if u.username else 'لا يوجد'}", parse_mode="Markdown")
+    elif text in ["help","هيلب","مساعدة","الاوامر","help"]:
+        await update.message.reply_text("❓ **الاوامر:**\n/start - رئيسية\nid - ايديك\nhelp - مساعدة", parse_mode="Markdown")
+    else:
+        await start(update, context)
 
 def main():
-    app = Application.builder().token(TOKEN).build()
+    if not BOT_TOKEN:
+        print("BOT_TOKEN missing!")
+        return
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("id", id_cmd))
-    app.add_handler(CommandHandler("help", help_cmd))
-    app.add_handler(CommandHandler(["Id","ID"], id_cmd))
-    app.add_handler(CommandHandler(["Help","HELP"], help_cmd))
-    app.add_handler(CallbackQueryHandler(on_callback))
-    print("Bot is running...")
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    print("Bot running...")
     app.run_polling()
 
 if __name__ == "__main__":
