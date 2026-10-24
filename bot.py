@@ -5,87 +5,71 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 
 TOKEN = os.getenv("BOT_TOKEN")
 
-# === روابط قنواتك الرسمية ===
 CHANNELS = {
     "🤖 قناة البوت": "https://t.me/hzohzhzj",
     "📢 تحديثات البوت": "https://t.me/ricofsj"
 }
 
-# === الكورسات بتفتح بعد 5 نقاط ===
-COURSES = {
-    "💻 مجال البرمجة": "https://t.me/hzohzhzj",
-    "🎨 مجال التصميم": "https://t.me/ricofsj",
-    "💰 شروحات الربح": "https://t.me/hzohzhzj"
+COURSES_CONTENT = {
+    "whatsapp": {
+        "name": "📱 مجال الواتس",
+        "lessons": {
+            "l1": "📚 الدرس 1: كيف تعمل قناة واتساب ناجحة؟\n\n1- افتح واتساب > التحديثات > انشاء قناة\n2- اختار اسم جذاب وصورة احترافية\n3- اكتب وصف فيه كلمات مفتاحية\n4- انشر اول 10 بوستات قبل ما تنشر الرابط",
+            "l2": "📚 الدرس 2: كيف تزيد متابعين قناة الواتس؟\n\n1- انشر رابط قناتك في حالاتك\n2- انشرها في قروبات الفيس والتلجرام\n3- اعمل تبادل مع قنوات تانية\n4- نزل محتوى حصري يومي\n5- استخدم الريلز والتيك توك للترويج",
+            "l3": "📚 الدرس 3: كيف تعمل رقم واتساب أعمال احترافي؟\n\n1- نزل واتساب بزنس\n2- سجل اسم مشروعك وشعارك\n3- فعل الكتالوج والرسائل التلقائية\n4- اضف موقعك وساعات العمل\n5- فعل الرد السريع",
+            "l4": "📚 الدرس 4: كيف تزيد مشاهدات حالات الواتس؟\n\n1- نزل 5 حالات في اليوم باوقات مختلفة\n2- استخدم فيديوهات قصيرة وصور عالية الجودة\n3- اسأل اسئلة عشان الناس ترد\n4- احذف جهات الاتصال الغير متفاعلة\n5- استخدم ملصقات وكتابة متحركة",
+            "l5": "📚 الدرس 5: الربح من قنوات الواتساب\n\n1- بيع اعلانات للقنوات التانية (1000 مشاهدة = 5$)\n2- تسويق لمنتجاتك\n3- الافلييت والروابط المختصرة\n4- بيع قناتك بعد تكبيرها",
+            "l6": "📚 الدرس 6: كيف تحمي رقمك من الحظر؟\n\n1- ما ترسل رسائل كتيرة لناس ما مسجلة رقمك\n2- ما تدخل قروبات كتيرة في يوم واحد\n3- فعل التحقق بخطوتين\n4- ما تستخدم نسخ معدلة كتير\n5- لو جاك حظر انتظر 24 ساعة",
+            "l7": "📚 الدرس 7: كيف تعمل ملصقات واتساب باسمك؟\n\nنزل تطبيق Sticker Maker > اعمل حزمة > اضف صورك > صدرها للواتساب > تقدر تبيعها!",
+        }
+    },
+    "facebook": {
+        "name": "📘 مجال الفيس بوك",
+        "lessons": {
+            "l1": "📚 الدرس 1: كيف تعمل صفحة فيس بوك تنجح بسرعة؟\n\n1- الاسم قصير وسهل الحفظ\n2- صورة بروفايل وغلاف احترافي\n3- انشر 3 ريلز يوميا\n4- رد على كل التعليقات اول ساعة",
+            "l2": "📚 الدرس 2: كيف تزيد متابعين فيسبوك مجانا؟\n\n1- ركز على الريلز (الفيس بدفعها بقوة)\n2- انشر في قروبات كبيرة\n3- اعمل لايف اسبوعيا\n4- استخدم هاشتاقات ترند\n5- تبادل مع صفحات تانية",
+            "l3": "📚 الدرس 3: شروط الربح من فيسبوك 2024\n\n1- 5000 متابع\n2- 60 الف دقيقة مشاهدة اخر شهرين\n3- 5 فيديوهات نشطة\n4- محتوى اصلي بدون مخالفات\n5- فعل حساب العوائد",
+            "l4": "📚 الدرس 4: كيف تعمل اعلان ممول ب 1 دولار؟\n\nادخل مدير الاعلانات > اختار تفاعل > حدد جمهورك (عمر + اهتمام) > خلي الميزانية 1$ يومي > راقب النتائج",
+            "l5": "📚 الدرس 5: افكار محتوى فيسبوك يضرب ترند\n\n1- قصص قصيرة وحكم\n2- معلومات غريبة\n3- تحديات ومسابقات\n4- ميمز سودانية\n5- شروحات تقنية",
+            "l6": "📚 الدرس 6: كيف تحمي صفحتك من السرقة؟\n\n1- فعل المصادقة الثنائية\n2- اضف 2 ادمن موثوقين\n3- ما تضغط على روابط مجهولة\n4- اربط الصفحة ببزنس مانجر",
+            "l7": "📚 الدرس 7: الربح من بيع الصفحات\n\nصفحة 10k متابع = 20-50$ \nصفحة 100k = 200-500$ \nتقدر تبيعها في قروبات الفيس او وسيط",
+        }
+    },
+    "prog": {
+        "name": "💻 مجال البرمجة",
+        "lessons": {
+            "l1": "📚 الدرس 1: من وين ابدأ برمجة؟\n\nابدأ ببايثون لانها اسهل لغة\nنزل تطبيق Pydroid3 من المتجر\nاول كود: print('Hello World')",
+            "l2": "📚 الدرس 2: كيف تعمل بوت تلجرام وتربح منو؟\n\n1- كلم @BotFather > /newbot\n2- انسخ التوكن\n3- استخدم الكود حقنا ده وعدل عليه\n4- ارفعو في Render مجانا\n5- بيع البوتات ب 10-30$",
+            "l3": "📚 الدرس 3: كيف تعمل موقع بسيط وتربح؟\n\nاستخدم HTML + CSS + مواقع جاهزة زي Canva و Hostinger\nاعمل موقع هبوط وبيعو",
+            "l4": "📚 الدرس 4: كيف تتعلم تصميم بوتات واتساب؟\n\nتتعلم Node.js + مكتبة Baileys\nشغل مطلوب جدا",
+        }
+    },
+    "design": {
+        "name": "🎨 مجال التصميم",
+        "lessons": {
+            "l1": "📚 الدرس 1: افضل تطبيقات تصميم للمبتدئين\n\n1- Canva (سهل)\n2- Picsart\n3- Pixellab (للشعارات)\n4- CapCut (فيديوهات)",
+            "l2": "📚 الدرس 2: كيف تصمم شعار ب 5 دقايق وتبيعو؟\n\nافتح Pixellab > اكتب الاسم بخط مزخرف > اضف شكل > صدر PNG > بيعو في خمسات ب 5$",
+            "l3": "📚 الدرس 3: كيف تصمم بوسترات احترافية؟\n\nاستخدم Canva قوالب جاهزة > غير الالوان والخط > اضف شعارك",
+            "l4": "📚 الدرس 4: الربح من التصميم\n\n1- خمسات\n2- مستقل\n3- قروبات الفيس\n4- اعمل قناة تلجرام تعرض شغلك",
+        }
+    },
+    "earn": {
+        "name": "💰 شروحات الربح العام",
+        "lessons": {
+            "l1": "📚 الدرس 1: الربح من الاختصار\n\nمواقع: exe.io , linkpays.in\nاختصر روابط قنواتك وانشرها\n1000 زيارة = 3-7$",
+            "l2": "📚 الدرس 2: الربح من قنوات التلجرام\n\n1- كبر قناتك ل 5k\n2- اشترك في بوتات الاعلانات\n3- سعر الاعلان 1-5$",
+            "l3": "📚 الدرس 3: الربح من المشاهدات\n\nاعمل قناة تيك توك + يوتيوب شورت + فيس ريلز\nنفس الفيديو انشرو في 3 منصات",
+            "l4": "📚 الدرس 4: كيف تجيب اول 100$ من النت؟\n\n1- اعمل 3 بوتات تلجرام وبيعهم\n2- بيع 2 تصاميم\n3- اعمل قناة واتس وبع اعلانين\nالموضوع محتاج 15 يوم تركيز بس",
+        }
+    }
 }
 
 DATA_FILE = "data.json"
-
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {}
+    if not os.path.exists(DATA_FILE): return {}
     try:
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return {}
-
+        with open(DATA_FILE, "r") as f: return json.load(f)
+    except: return {}
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
-
-def get_user(data, user_id):
-    user_id = str(user_id)
-    if user_id not in data:
-        data[user_id] = {"points": 0, "invited": []}
-    return data[user_id]
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    user_id = update.effective_user.id
-    args = context.args
-
-    # نظام الدعوة
-    if args and args[0].startswith("ref_"):
-        ref_id = args[0].replace("ref_", "")
-        if ref_id != str(user_id):
-            ref_user = get_user(data, ref_id)
-            if str(user_id) not in ref_user["invited"]:
-                ref_user["invited"].append(str(user_id))
-                ref_user["points"] += 1
-                save_data(data)
-                try:
-                    await context.bot.send_message(chat_id=int(ref_id), text=f"🎉 مبروك! شخص جديد دخل برابطك، نقاطك الآن {ref_user['points']}/5")
-                except:
-                    pass
-
-    user = get_user(data, user_id)
-    save_data(data)
-
-    bot_username = (await context.bot.get_me()).username
-    my_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
-
-    text = f"""
-أهلا بك يا {update.effective_user.first_name} 👋
-
-🔗 **قنواتنا الرسمية:**
-اشترك أولا عشان ما يفوتك شي
-
-⭐ **نقاطك: {user['points']}/5**
-ادع 5 اشخاص برابطك عشان تفتح الكورسات
-"""
-
-    keyboard = []
-    for name, link in CHANNELS.items():
-        keyboard.append([InlineKeyboardButton(name, url=link)])
-    
-    keyboard.append([InlineKeyboardButton(f"⭐ نقاطي: {user['points']}/5", callback_data="points")])
-    keyboard.append([InlineKeyboardButton("📤 رابط الدعوة الخاص بي", callback_data="mylink")])
-
-    # عرض الكورسات حسب النقاط
-    if user["points"] >= 5:
-        text += "\n\n✅ **الكورسات فتحت لك:**"
-        for name, link in COURSES.items():
-            keyboard.append([InlineKeyboardButton(name, url=link)])
-    else:
-        need = 5 - user["points"]
-        text += f"\n\n🔒 الكورسات مقفلة، باقي لك {need} دع
+    with open(DATA_FILE, "w") as f: json.dump(data, f)
+def get_user(data, user_id
